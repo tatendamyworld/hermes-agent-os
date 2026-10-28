@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-density="medium" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Agent OS — Design System</title>
+  <!-- Geist: the OS type system. Pinned weights only. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ==================== TOKENS (DESIGN.md §2–4) ==================== */
+    :root {
+      /* ground model — dark terminal canvas (default) */
+      --os-canvas:   #09090d;
+      --os-surface:  #0f0f16;
+      --os-raised:   #171721;
+      --os-ink:      #e4e6ec;
+      --os-muted:    #9aa0b8;
+      --os-faint:    #5a5f73;
+      --os-border:   #22232a;
+      --os-rule:     #1a1a20;
+      --os-accent:   #00d1b2;   /* computing cyan — the one accent */
+      --os-accent-ink: #001f23;
+      --os-positive: #26e391;
+      --os-negative: #ff6b82;
+      --os-warning:  #ffb84d;
+      --shadow-float: 0 12px 32px rgba(0,0,0,0.35);
+
+      /* type */
+      --font-ui:   "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --step-micro:   clamp(0.70rem,0.60rem + 0.3vw,0.80rem);
+      --step-small:   clamp(0.85rem,0.78rem + 0.3vw,0.95rem);
+      --step-body:    clamp(1.00rem,0.92rem + 0.4vw,1.12rem);
+      --step-large:   clamp(1.25rem,1.10rem + 0.6vw,1.50rem);
+      --step-heading: clamp(1.75rem,1.40rem + 1.2vw,2.50rem);
+      --step-display: clamp(2.50rem,1.80rem + 2.4vw,4.00rem);
+
+      /* space — 4px base, 8px rhythm */
+      --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px;
+      --space-md: 16px; --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px; --space-3xl: 64px;
+
+      /* radius — bimodal */
+      --radius-tight:   4px;
+      --radius-control: 6px;
+      --radius-panel:   8px;
+      --radius-soft:    12px;
+      --radius-pill:    9999px;
+    }
+
+    /* theme: VoltAgent (Set A) — emerald accepted (green, not violet) */
+    [data-theme="voltagent"] {
+      --os-canvas:   #050507; --os-surface: #101010; --os-raised: #151518;
+      --os-ink:      #f2f2f2; --os-muted: #b8b3b0; --os-faint: #8b949e;
+      --os-border:   #3d3a39; --os-rule: #2e2e33;
+      --os-accent:   #00d992; --os-positive: #26e391; --os-negative: #ff6b82;
+    }
+    /* theme: Linear (Set B) — violet REJECTED, remapped to cyan */
+    [data-theme="linear"] {
+      --os-canvas:   #08090a; --os-surface: #0f1011; --os-raised: #17181a;
+      --os-ink:      #f7f8f8; --os-muted: #d0d6e0; --os-faint: #8a8f98;
+      --os-border:   rgba(255,255,255,.08); --os-rule: rgba(255,255,255,.05);
+      --os-accent:   #00d1b2;
+      --os-positive: #26e391; --os-negative: #ff6b82;
+    }
+    /* theme: Light (Set C) — Vercel/Stripe blend, blue accepted */
+    [data-theme="light"] {
+      --os-canvas:   #f7f8fc; --os-surface: #ffffff; --os-raised: #f1f1fa;
+      --os-ink:      #14141a; --os-muted: #5a5f73; --os-faint: #9aa0b8;
+      --os-border:   #d9dae2; --os-rule: #e8e9f0;
+      --os-accent:   #2563eb; --os-positive: #1daa62; --os-negative: #d9425c;
+      --shadow-float: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    /* motion tokens */
+    :root {
+      --ease-out:    cubic-bezier(.22,1,.36,1);
+      --ease-expo:   cubic-bezier(.16,1,.3,1);
+      --t-hover: 180ms; --t-ui: 240ms; --t-reveal: 700ms;
+    }
+
+    /* ==================== ROOT STYLES ==================== */
+    html { font-size: 16px; }
+    body {
+      margin: 0; font-family: var(--font-ui); font-size: var(--step-body);
+      color: var(--os-ink); background: var(--os-canvas);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      color-scheme: dark;
+    }
+    [data-theme="light"] body { color-scheme: light; }
+
+    :focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+    a { color: var(--os-accent); text-underline-offset: .18em; text-decoration-thickness: .07em; }
+    a:hover { text-decoration-color: currentColor; }
+    code, .mono { font-family: var(--font-mono); font-feature-settings: "calt" 1, "rlig" 1; }
+    .num { font-variant-numeric: tabular-nums; }
+    td.num, th.num { text-align: right; }
+
+    /* ==================== LAYOUT (Monitor surface) ==================== */
+    .shell { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    .shell-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+                    padding: var(--space-sm) var(--space-lg); border-bottom: 1px solid var(--os-rule); flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: var(--space-xs); font-weight: 700; font-size: var(--step-large); }
+    .brand .dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--os-positive); flex: none; }
+    .meta { color: var(--os-muted); font-size: var(--step-small); flex: 1; }
+    .shell-main { max-width: 1280px; margin-inline: auto; width: 100%; padding: var(--space-lg); }
+    .shell-footer { padding: var(--space-sm) var(--space-lg); color: var(--os-muted); font-size: var(--step-small);
+                    border-top: 1px solid var(--os-rule); text-align: center; }
+
+    /* tabs */
+    .tabs { display: flex; gap: var(--space-xs); border-bottom: 1px solid var(--os-rule); margin-bottom: var(--space-xl); flex-wrap: wrap; }
+    .tab { padding: var(--space-xs) var(--space-md); border-radius: var(--radius-tight) var(--radius-tight) 0 0;
+           background: var(--os-surface); color: var(--os-muted); font-size: var(--step-small); font-weight: 600;
+           border: 1px solid var(--os-rule); border-bottom: none; cursor: pointer;
+           transition: background var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out); }
+    .tab:hover { background: var(--os-canvas); color: var(--os-ink); }
+    .tab[aria-selected="true"] { background: var(--os-canvas); color: var(--os-ink);
+                                  border-bottom: 2px solid var(--os-accent); }
+    .tab-panel { display: none; }
+    .tab-panel[aria-hidden="false"] { display: block; }
+
+    /* grids */
+    .grid { display: grid; gap: var(--space-md); }
+    @media (min-width: 640px) { .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } }
+
+    /* swatches */
+    .swatch { border-radius: var(--radius-panel); overflow: hidden; border: 1px solid var(--os-border); box-shadow: var(--shadow-float); }
+    .swatch-swatch { height: 72px; display: flex; align-items: flex-end; padding: var(--space-sm); }
+    .swatch-name { font-size: var(--step-micro); text-transform: uppercase; letter-spacing: .04em; padding: 0 var(--space-sm); }
+    .swatch-label { font-size: var(--step-small); font-weight: 600; padding: var(--space-xs) var(--space-sm);
+                    border-top: 1px solid var(--os-rule); }
+    .swatch-color { color: var(--os-ink); }
+
+    /* type lines */
+    .type-line { display: flex; align-items: baseline; gap: var(--space-sm); }
+    .type-line .label { font-size: var(--step-small); color: var(--os-muted); min-width: 80px; flex: none; }
+    .type-line .sample { line-height: 1.1; }
+
+    /* surfaces */
+    .card { background: var(--os-surface); border: 1px solid var(--os-border); border-radius: var(--radius-panel);
+           box-shadow: var(--shadow-float); }
+    h2, h3 { margin: 0 0 var(--space-lg); font-weight: 700; }
+
+    /* ==================== COMMAND PALETTE (Operate/Command) ==================== */
+    .cmd-trigger { position: relative; }
+    .cmd-input-wrap { display: flex; align-items: center; gap: var(--space-xs); background: var(--os-raised);
+                      border: 1px solid var(--os-border); border-radius: var(--radius-control); padding: 0 var(--space-sm); }
+    .cmd-input-wrap .kdb { font-family: var(--font-mono); font-size: var(--step-small); color: var(--os-faint); flex: none; }
+    .cmd-input { background: transparent; border: 0; outline: 0; width: 100%; color: var(--os-ink);
+                 font-family: var(--font-mono); font-size: var(--step-body); padding: var(--space-xs) 0; }
+    .cmd-input::placeholder { color: var(--os-faint); }
+    .cmd-input:focus + .kdb { color: var(--os-accent); }
+    .cmd-results { max-height: 32vh; overflow-y: auto; margin-top: var(--space-xs); }
+    .cmd-result { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); cursor: pointer;
+                  border-radius: var(--radius-tight); }
+    .cmd-result:hover, .cmd-result:focus { background: var(--os-canvas); }
+    .cmd-result .status-dot { width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--os-accent); flex: none; }
+    .cmd-result .cmd-meta { flex: 1; text-align: left; }
+    .cmd-result .cmd-action { font-weight: 600; color: var(--os-ink); display: block; font-size: var(--step-small); }
+    .cmd-result .cmd-hint { font-size: var(--step-micro); color: var(--os-muted); }
+
+    /* ==================== CHAT / CONVERSATION (Monitor) ==================== */
+    .chat { display: flex; flex-direction: column; gap: var(--space-sm); }
+    .msg { border-radius: var(--radius-panel); border: 1px solid var(--os-border); background: var(--os-surface); box-shadow: var(--shadow-float); }
+    .msg-header { display: flex; align-items: center; gap: var(--space-sm);
+                  padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--os-rule); }
+    .msg-header .avatar { width: 28px; height: 28px; border-radius: var(--radius-pill); background: var(--os-accent); flex: none; }
+    .msg-header .who { font-weight: 600; font-size: var(--step-small); }
+    .msg-header .role { margin-left: auto; color: var(--os-muted); font-size: var(--step-micro); text-transform: uppercase; letter-spacing: .04em; }
+    .msg-body { padding: var(--space-md); }
+    .msg p { margin: 0 0 var(--space-sm); }
+    .msg p:last-child { margin-bottom: 0; }
+    .tool-call { margin-top: var(--space-sm); border-top: 1px solid var(--os-rule); padding-top: var(--space-sm); }
+    .tool-card { margin-top: var(--space-sm); border-left: 2px solid var(--os-accent); padding-left: var(--space-sm); }
+    .tool-card[open] .tool-card-header .tool-toggle { transform: rotate(180deg); }
+    .tool-card-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; padding: var(--space-xs) 0; }
+    .tool-name { font-size: var(--step-small); font-weight: 600; color: var(--os-accent); }
+    .tool-toggle { transition: transform var(--t-ui) var(--ease-out); color: var(--os-faint); font-size: var(--step-micro); }
+    .tool-card-body > * { display: none; }
+    .tool-card[open] .tool-card-body > * { display: block; }
+    .tool-card-placeholder { font-family: var(--font-mono); font-size: var(--step-small); white-space: pre-wrap; color: var(--os-muted); padding: var(--space-sm) 0; margin: 0; }
+
+    /* status badges */
+    .badge { display: inline-flex; align-items: center; gap: .25em; padding: 2px var(--space-sm);
+             border-radius: var(--radius-pill); font-size: var(--step-micro); font-weight: 600; font-family: var(--font-mono); }
+    .badge.completed { background: var(--os-positive); color: var(--os-accent-ink); }
+    .badge.running  { background: var(--os-accent); color: var(--os-accent-ink); animation: pulse 2s ease-in-out infinite; }
+    .badge.error    { background: var(--os-negative); color: #fff; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+    .status-row { display: flex; align-items: center; gap: var(--space-xs); font-size: var(--step-small); }
+    .status-dot { width: 8px; height: 8px; border-radius: var(--radius-pill); flex: none; }
+    .dot-pending { background: var(--os-faint); }
+    .dot-run { background: var(--os-accent); }
+    .dot-done { background: var(--os-positive); }
+    .dot-err { background: var(--os-negative); }
+
+    /* ==================== ACTIVITY STREAM (Monitor) ==================== */
+    .activity { list-style: none; margin: 0; padding: 0; border: 1px solid var(--os-border);
+                border-radius: var(--radius-panel); background: var(--os-surface); box-shadow: var(--shadow-float); overflow: hidden; }
+    .activity li { display: flex; align-items: start; gap: var(--space-sm); padding: var(--space-sm) var(--space-md);
+                   border-bottom: 1px solid var(--os-rule); }
+    .activity li:last-child { border-bottom: none; }
+    .activity-time { font-family: var(--font-mono); font-size: var(--step-small); color: var(--os-muted); min-width: 90px; flex: none; }
+    .activity-event .label { font-weight: 600; font-size: var(--step-small); }
+    .activity-event .detail { color: var(--os-muted); font-size: var(--step-small); margin-top: 2px; }
+
+    /* ==================== DATA TABLE ==================== */
+    table { width: 100%; border-collapse: collapse; font-size: var(--step-small); }
+    th, td { padding: 10px var(--space-sm); text-align: left; border-bottom: 1px solid var(--os-rule); }
+    th { font-weight: 600; color: var(--os-muted); text-transform: uppercase; letter-spacing: .03em; font-size: var(--step-micro); }
+    td { color: var(--os-ink); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--os-raised); }
+    .pill-tag { font-size: var(--step-micro); padding: 1px var(--space-xs); border-radius: var(--radius-tight);
+                background: var(--os-surface); color: var(--os-muted); }
+
+    /* ==================== SETTINGS (Configure) ==================== */
+    .settings-grid { display: grid; gap: var(--space-md); }
+    @media (min-width: 640px) { .settings-grid.labels { grid-template-columns: 240px 1fr; gap: var(--space-lg); align-items: start; } }
+    .setting { display: flex; flex-direction: column; gap: var(--space-xs); }
+    .setting label { font-size: var(--step-small); font-weight: 600; color: var(--os-ink); }
+    .setting .desc { font-size: var(--step-small); color: var(--os-muted); }
+    .setting input, .setting select { background: var(--os-raised); color: var(--os-ink);
+                                       border: 1px solid var(--os-border); border-radius: var(--radius-control);
+                                       padding: var(--space-xs) var(--space-sm); font-family: var(--font-ui); font-size: var(--step-body); }
+    .setting input:focus, .setting select:focus { border-color: var(--os-accent); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-sm) 0;
+                  border-bottom: 1px solid var(--os-rule); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row .toggle-text { display: flex; flex-direction: column; }
+    .toggle-row .toggle-text .label { font-weight: 600; font-size: var(--step-small); color: var(--os-ink); }
+    .toggle-row .toggle-text .desc { font-size: var(--step-small); color: var(--os-muted); }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background: var(--os-surface); border: 1px solid var(--os-border);
+              border-radius: var(--radius-pill); transition: .25s; }
+    .slider::before { content: ""; position: absolute; height: 16px; width: 16px; left: 2px; bottom: 4px;
+                      background: var(--os-ink); border-radius: var(--radius-pill); transition: .25s; }
+    .switch input:checked + .slider { background: var(--os-accent); }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+
+    /* ==================== TWEAKS PANEL ==================== */
+    #tweaks-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: flex-start;
+                      padding: 4vh 16px; z-index: 2000; }
+    #tweaks-overlay.open { display: flex; }
+    .tweaks-sheet { background: var(--os-raised); border: 1px solid var(--os-border); border-radius: var(--radius-soft);
+                    box-shadow: var(--shadow-float); width: min(90vw, 360px); margin: 0 auto; max-height: 80vh; overflow-y: auto; }
+    .tweaks-sheet h2 { margin: 0; padding: var(--space-md); border-bottom: 1px solid var(--os-rule); font-size: var(--step-large); }
+    .tweaks-field { padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--os-rule); display: flex;
+                    flex-direction: column; gap: var(--space-xs); }
+    .tweaks-field label { font-size: var(--step-small); font-weight: 600; color: var(--os-ink); }
+    .tweaks-field select { padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-control);
+                    border: 1px solid var(--os-border); background: var(--os-surface); color: var(--os-ink); font-size: var(--step-body); cursor: pointer; }
+    .tweaks-field select:focus { border-color: var(--os-accent); outline: none; }
+    .tweaks-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); padding: var(--space-md);
+                      border-top: 1px solid var(--os-rule); }
+
+    /* buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4em; border: 1px solid var(--os-border);
+           border-radius: var(--radius-control); padding: var(--space-xs) var(--space-md); font: 600 var(--step-body) var(--font-ui);
+           cursor: pointer; transition: background var(--t-hover) var(--ease-out), transform .12s var(--ease-out); }
+    .btn:hover { background: var(--os-surface); }
+    .btn:active { transform: scale(.97); }
+    .btn-ghost { background: transparent; color: var(--os-ink); }
+    .btn-primary { background: var(--os-accent); color: var(--os-accent-ink); border-color: var(--os-accent); }
+    .btn-primary:hover { background: color-mix(in oklab, var(--os-accent) 90%, transparent); }
+
+    @media (max-width: 640px) {
+      .shell-main { padding: var(--space-md); }
+      .tab { font-size: var(--step-micro); padding: var(--space-xs) var(--space-sm); }
+    }
+  </style>
+</head>
+<body>
+  <script>document.documentElement.classList.remove('no-js'); document.documentElement.classList.add('js')</script>
+
+  <div class="shell">
+    <!-- ===== Header ===== -->
+    <header class="shell-header">
+      <div class="brand"><span class="dot"></span><span>Hermes Agent OS</span></div>
+      <span class="meta">Design system spec — terminal-native, dark-first, single-accent</span>
+      <button id="tweaks-btn" class="btn btn-ghost" aria-haspopup="dialog" aria-controls="tweaks-overlay">
+        <span class="mono">⚙</span> Tweaks
+      </button>
+    </header>
+
+    <!-- ===== Main ===== -->
+    <main class="shell-main">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" aria-controls="panel-palette">Palette</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-type">Typography</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-components">Components</button>
+      </div>
+
+      <!-- ===== Palette ===== -->
+      <section id="panel-palette" class="tab-panel" aria-hidden="false" role="tabpanel">
+        <h2>Ground &amp; surfaces</h2>
+        <div class="grid cols-3">
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-canvas)"><span class="swatch-name">canvas</span></div><div class="swatch-label swatch-color">#09090d</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-surface)"><span class="swatch-name">surface</span></div><div class="swatch-label">— one tone step up</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-raised)"><span class="swatch-name">raised</span></div><div class="swatch-label">— elevated; shadow only</div></div>
+        </div>
+
+        <h3 style="font-size:var(--step-large);margin:var(--space-xl) 0 var(--space-md);">Text &amp; status</h3>
+        <div class="grid cols-3">
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-ink)"><span class="swatch-name">ink</span></div><div class="swatch-label">primary text</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-muted)"><span class="swatch-name">muted</span></div><div class="swatch-label">secondary</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-faint)"><span class="swatch-name">faint</span></div><div class="swatch-label">metadata / disabled</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-accent)"><span class="swatch-name">accent</span></div><div class="swatch-label">the one accent</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-positive)"><span class="swatch-name">positive</span></div><div class="swatch-label">active / done / connected</div></div>
+          <div class="swatch"><div class="swatch-swatch" style="background:var(--os-negative)"><span class="swatch-name">negative</span></div><div class="swatch-label">error / failed / disconnected</div></div>
+        </div>
+      </section>
+
+      <!-- ===== Typography ===== -->
+      <section id="panel-type" class="tab-panel" aria-hidden="true" role="tabpanel">
+        <h2>Typography</h2>
+        <p style="max-width:60ch;color:var(--os-muted);">Geist for UI and body, Geist Mono for commands, code and numeric values. Five sizes, far apart.</p>
+        <div class="grid" style="gap:var(--space-md);">
+          <div class="type-line"><span class="label">Display</span><span class="sample" style="font-size:var(--step-display);line-height:.95">Stools for small kitchens</span></div>
+          <div class="type-line"><span class="label">Heading</span><span class="sample" style="font-size:var(--step-heading);line-height:1.1">Section title</span></div>
+          <div class="type-line"><span class="label">Lead</span><span class="sample" style="font-size:var(--step-large);line-height:1.35">Supporting line, one sentence under 22 words.</span></div>
+          <div class="type-line"><span class="label">Body</span><span class="sample" style="font-size:var(--step-body);line-height:1.55">Body text at 16–18px, 45–75 characters per line. Running copy.</span></div>
+          <div class="type-line"><span class="label">Small</span><span class="sample" style="font-size:var(--step-small);line-height:1.5">Labels, captions, metadata.</span></div>
+          <div class="type-line"><span class="label">Code</span><code class="mono" style="font-size:var(--step-small);background:var(--os-surface);padding:2px 6px;border-radius:var(--radius-tight)">npx create haos-agent ./project</code></div>
+        </div>
+        <div class="mono" style="margin-top:var(--space-lg);font-size:var(--step-small);color:var(--os-muted);">
+          Tabular figures: 1,024.56 aligns in columns.
+        </div>
+      </section>
+
+      <!-- ===== Components ===== -->
+      <section id="panel-components" class="tab-panel" aria-hidden="true" role="tabpanel">
+        <h2>Components</h2>
+
+        <!-- Command palette (live) -->
+        <section class="card" style="margin-bottom:var(--space-xl);">
+          <div class="cmd-trigger">
+            <div class="cmd-input-wrap">
+              <span class="kdb mono" aria-hidden="true">/</span>
+              <input type="text" class="cmd-input" id="cmd-input" placeholder="Type a command…">
+              <kbd class="kdb" aria-hidden="true">↵</kbd>
+            </div>
+            <div class="cmd-results" id="cmd-results"></div>
+          </div>
+          <p style="color:var(--os-muted);font-size:var(--step-small);margin-top:var(--space-sm);">
+            Command palette — the Operate surface entry point. Accent marks the live result; status dots are data, not decoration.
+          </p>
+        </section>
+
+        <!-- Chat view -->
+        <section class="card" style="margin-bottom:var(--space-xl);">
+          <div class="chat">
+            <div class="msg">
+              <div class="msg-header">
+                <span class="avatar"></span><span class="who">Hermes</span><span class="role">assistant</span>
+              </div>
+              <div class="msg-body">
+                <p>I'll inspect the repository structure first, then run the build.</p>
+                <div class="tool-call">
+                  <div class="tool-card">
+                    <div class="tool-card-header">
+                      <span class="tool-name">→ shell: git rev-parse</span>
+                      <span class="tool-toggle" aria-label="expand">▼</span>
+                    </div>
+                    <div class="tool-card-body">
+                      <pre class="tool-card-placeholder mono">$ git rev-parse --show-toplevel
+/home/user/project</pre>
+                    </div>
+                  </div>
+                  <div class="tool-card">
+                    <div class="tool-card-header">
+                      <span class="tool-name">→ terminal: npm run build</span>
+                      <span class="tool-toggle" aria-label="expand">▼</span>
+                    </div>
+                    <div class="tool-card-body">
+                      <pre class="tool-card-placeholder mono">$ npm run build
+✓ built in 1.4s
+→ dist/index.html</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="msg" style="margin-left:auto;max-width:80%;">
+              <div class="msg-header">
+                <span class="avatar" style="background:var(--os-ink)"></span><span class="who">You</span><span class="role">user</span>
+              </div>
+              <div class="msg-body"><p>Good — now push it live.</p></div>
+            </div>
+          </div>
+          <p style="color:var(--os-muted);font-size:var(--step-small);margin-top:var(--space-sm);">
+            Monitor surface: flat panels, real counts. Accent only on tool names — no icon-topped cards.
+          </p>
+        </section>
+
+        <!-- Status badges -->
+        <section class="card" style="margin-bottom:var(--space-xl);">
+          <div class="msg-header"><span class="who">Run status: 4 done · 1 running · 0 errors</span></div>
+          <div class="msg-body">
+            <div class="status-row"><span class="status-dot dot-done"></span><span>3 completed steps</span></div>
+            <div class="status-row" style="margin-top:var(--space-xs);"><span class="status-dot dot-run"></span><span>1 running step</span></div>
+            <div class="status-row" style="margin-top:var(--space-xs);"><span class="status-dot dot-err"></span><span>0 errors</span></div>
+            <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);flex-wrap:gap;">
+              <span class="badge completed">done</span>
+              <span class="badge running">running</span>
+              <span class="badge error">error</span>
+            </div>
+            <p style="color:var(--os-muted);font-size:var(--step-small);margin-top:var(--space-md);">
+              One hue per status; accent on one action and one data element only. Counts sum from the rows.
+            </p>
+          </div>
+        </section>
+
+        <!-- Activity stream -->
+        <section class="card" style="margin-bottom:var(--space-xl);">
+          <ul class="activity">
+            <li><span class="activity-time">14:32:01</span><div class="activity-event"><span class="label">Run started</span><span class="detail">project-deploy · 5 expected steps</span></div></li>
+            <li><span class="activity-time">14:32:03</span><div class="activity-event"><span class="label">tool</span><span class="detail mono">shell → npm run build</span></div></li>
+            <li><span class="activity-time">14:32:05</span><div class="activity-event"><span class="label">tool</span><span class="detail mono">shell → git push origin main</span></div></li>
+            <li><span class="activity-time">14:32:07</span><div class="activity-event"><span class="label">result</span><span class="detail">deployed → https://project.vercel.app</span></div></li>
+            <li><span class="activity-time">14:32:09</span><div class="activity-event"><span class="label">Run completed</span><span class="detail">4 of 5 steps OK · 1 skipped</span></div></li>
+          </ul>
+        </section>
+
+        <!-- Data table -->
+        <section class="card" style="margin-bottom:var(--space-xl);">
+          <div class="msg-header"><span class="who">Agent outputs — steps 2–4 of 5</span></div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Step</th><th>Type</th><th class="num">Duration</th><th style="text-align:right">Output</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><span class="mono">build</span></td><td>shell</td><td class="num">1.4s</td><td style="text-align:right">482 KB</td><td><span class="pill-tag">success</span></td></tr>
+                <tr><td><span class="mono">push</span></td><td>git</td><td class="num">2.1s</td><td style="text-align:right">3 files</td><td><span class="pill-tag">success</span></td></tr>
+                <tr><td><span class="mono">deploy</span></td><td>vercel</td><td class="num">3.8s</td><td style="text-align:right">200 OK</td><td><span class="pill-tag">success</span></td></tr>
+              </tbody>
+              <tfoot><tr><td colspan="2"><strong>Total</strong></td><td class="num"><strong>7.3s</strong></td><td style="text-align:right">—</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </section>
+
+        <!-- Settings form -->
+        <section class="card">
+          <div class="msg-header"><span class="who">Configure</span></div>
+          <div class="msg-body">
+            <form class="settings-grid labels" style="width:100%;">
+              <div class="setting">
+                <label for="proj-name">Project name</label>
+                <input type="text" id="proj-name" value="hermes-agent-os" style="max-width:280px;">
+              </div>
+              <div class="setting">
+                <label for="density-pick">Density</label>
+                <select id="density-pick">
+                  <option value="sparse">Sparse — homes, single objects</option>
+                  <option value="medium" selected>Medium — dashboards, lists</option>
+                  <option value="dense">Dense — logs, long sessions</option>
+                </select>
+              </div>
+            </form>
+            <div style="border-top:1px solid var(--os-rule);margin-top:var(--space-md);">
+              <div class="toggle-row">
+                <span class="toggle-text"><span class="label">Reduced motion</span><span class="desc">Honour prefers-reduced-motion</span></span>
+                <label class="switch"><input type="checkbox" id="reducing"><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="shell-footer">
+      Counts: 4 completed · 1 running · 0 errors &middot; Accent on data + one action &middot;
+      <span class="mono">$ git push origin main</span>
+    </footer>
+  </div>
+
+  <!-- ===== Tweaks panel ===== -->
+  <div id="tweaks-overlay" class="tweaks-sheet" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tweaks-title">
+    <h2 id="tweaks-title">Tweaks</h2>
+    <div class="tweaks-field">
+      <label for="theme">Theme (imported from popular-web-designs)</label>
+      <select id="theme">
+        <option value="dark">OS default — cyan accent</option>
+        <option value="voltagent">VoltAgent — emerald (green, accepted)</option>
+        <option value="linear">Linear — violet→remapped to cyan</option>
+        <option value="light">Light — blue accent</option>
+      </select>
+    </div>
+    <div class="tweaks-field">
+      <label for="density-t">Density</label>
+      <select id="density-t">
+        <option value="sparse">Sparse</option><option value="medium" selected>Medium</option><option value="dense">Dense</option>
+      </select>
+    </div>
+    <div class="tweaks-field">
+      <label for="motion">Motion</label>
+      <select id="motion">
+        <option value="on">Enabled (reduced-motion honoured)</option>
+        <option value="off">Disabled</option>
+      </select>
+    </div>
+    <div class="tweaks-actions">
+      <button class="btn btn-ghost" id="tweaks-close">Close</button>
+    </div>
+  </div>
+  <!-- separate backdrop, rendered as sibling for clean stacking -->
+  <div id="tweaks-backdrop" class="tweaks-sheet" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;"></div>
+
+  <script>
+    "use strict";
+    // ===== Tab navigation =====
+    const tabs = document.querySelectorAll('.tab');
+    const panels = document.querySelectorAll('.tab-panel');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      const target = t.getAttribute('aria-controls');
+      tabs.forEach(x => x.setAttribute('aria-selected', x === t));
+      panels.forEach(p => p.setAttribute('aria-hidden', p.id !== target));
+      document.getElementById(target).scrollIntoView();
+    }));
+
+    // ===== Command palette (filtered results) =====
+    const cmds = [
+      { action: 'Build project', hint: 'Runs npm run build · shell' },
+      { action: 'Inspect repository', hint: 'Scans for banned patterns · inspect' },
+      { action: 'Deploy to production', hint: 'Pushes and deploys · deploy' },
+      { action: 'Run test suite', hint: 'Executes unit + integration · verify' },
+      { action: 'Open design system', hint: 'Loads Hermes Agent OS tokens · design' },
+    ];
+    const input = document.getElementById('cmd-input');
+    const results = document.getElementById('cmd-results');
+    function renderResults(query = '') {
+      const q = query.toLowerCase().trim();
+      const matches = q === ''
+        ? cmds
+        : cmds.filter(c => c.action.toLowerCase().includes(q) || c.hint.toLowerCase().includes(q));
+      results.innerHTML = matches.map(c =>
+        `<button type="button" class="cmd-result">
+          <span class="status-dot"></span>
+          <span class="cmd-meta">
+            <span class="cmd-action">${c.action}</span>
+            <span class="cmd-hint">${c.hint}</span>
+          </span>
+        </button>`
+      ).join('') || '<p style="padding:var(--space-sm);color:var(--os-muted);font-size:var(--step-small);">No commands match.</p>';
+    }
+    input.addEventListener('input', () => renderResults(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { input.value=''; renderResults(); }
+    });
+    // global / and ⌘K open the palette
+    document.addEventListener('keydown', (e) => {
+      if ((e.key === '/' ) || (e.metaKey && e.key === 'k') || (e.ctrlKey && e.key === 'k')) {
+        if (document.activeElement === input) return;
+        e.preventDefault(); input.focus(); input.select();
+      }
+    });
+    renderResults();
+
+    // ===== Tool cards — expand/collapse (Monitor surface) =====
+    document.querySelectorAll('.tool-card-header').forEach(h => {
+      h.addEventListener('click', () => h.parentElement.toggleAttribute('open'));
+    });
+
+    // ===== Tweaks panel =====
+    const overlay = document.getElementById('tweaks-overlay');
+    const backdrop = document.getElementById('tweaks-backdrop');
+    const openTweaks = () => { overlay.classList.add('open'); overlay.setAttribute('aria-hidden','false'); backdrop.style.display='flex'; document.getElementById('theme').focus(); };
+    const closeTweaks = () => { overlay.classList.remove('open'); overlay.setAttribute('aria-hidden','true'); backdrop.style.display='none'; document.getElementById('tweaks-btn').focus(); };
+    document.getElementById('tweaks-btn').addEventListener('click', openTweaks);
+    document.getElementById('tweaks-close').addEventListener('click', closeTweaks);
+    backdrop.addEventListener('click', closeTweaks);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeTweaks(); });
+    document.getElementById('tweaks-btn').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTweaks(); }
+    });
+
+    // ===== Theme / density / motion wiring =====
+    const html = document.documentElement;
+    document.getElementById('theme').addEventListener('change', (e) => html.setAttribute('data-theme', e.target.value));
+    document.getElementById('density-t').addEventListener('change', (e) => html.setAttribute('data-density', e.target.value));
+    // sync compact density control
+    document.getElementById('density-pick').addEventListener('change', (e) => {
+      html.setAttribute('data-density', e.target.value);
+      document.getElementById('density-t').value = e.target.value;
+    });
+    document.getElementById('motion').addEventListener('change', (e) => {
+      document.body.classList.toggle('no-motion', e.target.value === 'off');
+    });
+    document.getElementById('reducing').addEventListener('change', () => {
+      document.body.classList.toggle('no-motion', document.getElementById('reducing').checked);
+    });
+  </script>
+</body>
+</html>

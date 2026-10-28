@@ -4,8 +4,8 @@ A terminal-native, dark-first design system for agent UIs — built from
 `design-taste-frontend` anti-slop rules and `popular-web-designs` vocabularies.
 Single-accent (cyan), flat surfaces, and a Monitor surface throughout.
 
-- **`specification/DESIGN.md`** — token spec (color, type, space, radius, motion) + anti-slop rules.
-- **`specification/SKILL.md`** — a skill you can drop into Hermes to consume this system.
+- **`DESIGN.md`** — token spec (color, type, space, radius, motion) + anti-slop rules.
+- **`SKILL.md`** — a skill you can drop into Hermes to consume this system.
 - **`references/`** — bridge docs explaining how `design-taste-frontend` and `popular-web-designs`
   vocabularies map onto seven surface archetypes.
 - **`demo/index.html`** — a living, self-contained component lab (open directly in any browser):
@@ -14,8 +14,12 @@ Single-accent (cyan), flat surfaces, and a Monitor surface throughout.
 ## How to use the tokens
 
 ```css
-@import "hermes-agent-os/specification/DESIGN.md"; /* tokens are documented as CSS custom properties */
-/* Or copy the :root block from specification/DESIGN.md into your stylesheet. */
+/* Copy the :root block from DESIGN.md into your stylesheet. */
+:root {
+  --os-canvas: #09090d;
+  --os-accent: #00d1b2; /* computing cyan — the one accent */
+  /* …full token set in DESIGN.md */
+}
 ```
 
 ## Run the demo
